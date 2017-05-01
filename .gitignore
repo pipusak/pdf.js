@@ -6,4 +6,8 @@ tags
 Makefile
 node_modules/
 examples/node/svgdump/
+<<<<<<< HEAD
 examples/node/pdf2png/*.png
+=======
+/nbproject/private/
+>>>>>>> piplocal
