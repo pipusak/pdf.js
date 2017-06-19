@@ -48,6 +48,7 @@ import { ViewHistory } from './view_history';
 
 var DEFAULT_SCALE_DELTA = 1.1;
 var DISABLE_AUTO_FETCH_LOADING_BAR_TIMEOUT = 5000;
+var references=[];
 
 function configure(PDFJS) {
   PDFJS.imageResourcesPath = './images/';
@@ -138,7 +139,7 @@ var PDFViewerApplication = {
     renderer: 'canvas',
     enhanceTextSelection: false,
     renderInteractiveForms: false,
-    enablePrintAutoRotate: false,
+    enablePrintAutoRotate: false
   },
   isViewerEmbedded: (window.parent !== window),
   url: '',
@@ -147,6 +148,9 @@ var PDFViewerApplication = {
 
   // called once when the document is loaded
   initialize: function pdfViewInitialize(appConfig) {
+     
+       
+       
     this.preferences = this.externalServices.createPreferences();
 
     configure(PDFJS);
@@ -383,9 +387,16 @@ var PDFViewerApplication = {
       sidebarConfig.eventBus = eventBus;
       self.pdfSidebar = new PDFSidebar(sidebarConfig);
       self.pdfSidebar.onToggled = self.forceRendering.bind(self);
-
+      
+      
+        
+      
       resolve(undefined);
+
     });
+    
+    
+    
   },
 
   run: function pdfViewRun(config) {
@@ -681,6 +692,8 @@ var PDFViewerApplication = {
         throw new Error(loadingErrorMessage);
       }
     );
+      
+
   },
 
   download: function pdfViewDownload() {
@@ -713,9 +726,11 @@ var PDFViewerApplication = {
       function getDataSuccess(data) {
         var blob = createBlob(data, 'application/pdf');
         downloadManager.download(blob, url, filename);
+       // getReferences(blob);
       },
       downloadByUrl // Error occurred try downloading with just the url.
     ).then(null, downloadByUrl);
+     
   },
 
   fallback: function pdfViewFallback(featureId) {
@@ -881,7 +896,9 @@ var PDFViewerApplication = {
 
     var pdfThumbnailViewer = this.pdfThumbnailViewer;
     pdfThumbnailViewer.setDocument(pdfDocument);
-
+    
+    
+    
     firstPagePromise.then((pdfPage) => {
       downloadedPromise.then(function () {
         self.eventBus.dispatch('documentload', {source: self});
@@ -1090,6 +1107,13 @@ var PDFViewerApplication = {
         });
       }
     });
+      this.pdfDocument.getData().then(
+      function getDataSuccess(data) {
+        var blob = createBlob(data, 'application/pdf');
+        
+      getReferences(blob);  
+      }
+      );
   },
 
   setInitialView(storedHash, options = {}) {
@@ -1296,6 +1320,8 @@ var PDFViewerApplication = {
       });
     }
   },
+  
+
 };
 
 var validateFileURL;
@@ -1556,7 +1582,114 @@ function webViewerPageRendered(e) {
   if (!pageView) {
     return;
   }
+       
+        /*var references = [
+            {page: 2, coords: [449.082, 634.25, 460.699, 646.255], text: " Toscano, E.; Lo Bello, L., Multichannel Superframe Scheduling for IEEE 802.15.4 Industrial Wireless Sensor Networks, in Industrial Informatics, IEEE Transactions on ,vol.8, no.2, pp.337-350, May 2012"},
+            {page: 2, coords: [48.964, 622.295, 60.58, 634.3], text: " Toscano, E.; Lo Bello, L., Multichannel Superframe Scheduling for IEEE 802.15.4 Industrial Wireless Sensor Networks, in Industrial Informatics, IEEE Transactions on ,vol.8, no.2, pp.337-350, May 2012"},
+            {page: 2, coords: [141.118, 598.385, 152.734, 610.39], text: "A. Ahmad, Z. Hanzalek and C. Hanen, â€ťA polynomial scheduling algorithm for IEEE 802.15.4/ ZigBee cluster tree WSN with one collision domain and period crossing constraint,â€ť Proceedings of the 2014 IEEE Emerging Technology and Factory Automation (ETFA), Barcelona, 2014, pp. 1-8. doi: 10.1109/ETFA.2014.7005182"},
+            {page: 4, coords: [48.964, 417.041, 58.257, 426.645], text: "A. Ahmad, Z. Hanzalek and C. Hanen, â€ťA polynomial scheduling algorithm for IEEE 802.15.4/ ZigBee cluster tree WSN with one collision domain and period crossing constraint,â€ť Proceedings of the 2014 IEEE Emerging Technology and Factory Automation (ETFA), Barcelona, 2014, pp. 1-8. doi: 10.1109/ETFA.2014.7005182"},
+            {page: 4, coords: [48.964, 399.108, 58.257, 408.712], text: " Toscano, E.; Lo Bello, L., Multichannel Superframe Scheduling for IEEE 802.15.4 Industrial Wireless Sensor Networks, in Industrial Informatics, IEEE Transactions on ,vol.8, no.2, pp.337-350, May 2012"}
 
+
+        ];*/
+    
+        var len = references.length;
+       // console.log(" Crating references size="+len);
+        for (var i = 0; i < len; i++) {
+          //  console.log("Reference page="+references[i].page+" text="+references[i].text);
+            if (references[i].page === pageNumber) {
+                
+                var pdfRect = references[i].coords;
+
+
+                var screenRect = pageView.viewport.convertToViewportRectangle(pdfRect);
+
+                var x = Math.min(screenRect[0], screenRect[2]), width = Math.abs(screenRect[0] - screenRect[2]);
+                var y = Math.min(screenRect[1], screenRect[3]), height = Math.abs(screenRect[1] - screenRect[3]);
+
+// note: needs to be done in the 'pagerendered' event
+                var overlayDiv = document.createElement('reference' + i);
+                overlayDiv.style.backgroundColor = "rgba(255,255,0,0.5)";
+                overlayDiv.style.position = "absolute";
+                overlayDiv.style.top = y + "px";
+                overlayDiv.style.left = x + "px";
+                overlayDiv.style.width = width + 'px';
+                overlayDiv.style.height = height + 'px';
+                overlayDiv.style.zIndex = 0;
+
+
+
+                /*   var screenRect = pageView.viewport.convertToViewportRectangle(pdfRect);
+                 
+                 var x = Math.min(screenRect[0], screenRect[2]), width = Math.abs(screenRect[0] - screenRect[2]);
+                 var y = Math.min(screenRect[1], screenRect[3]), height = Math.abs(screenRect[1] - screenRect[3]);
+                 */
+                var bubblediv = document.createElement("P");
+                bubblediv.style.backgroundColor = "rgba(250,250,250,1)";
+                bubblediv.style.position = "absolute";
+                bubblediv.style.borderStyle = "solid";
+                bubblediv.style.textAlign = "center";
+                bubblediv.style.wordWrap = "normal";
+                bubblediv.style.borderRadius = "25px";
+                bubblediv.style.borderwidth="5px";
+                bubblediv.style.top = y + height + "px";
+                bubblediv.style.left = String(x) + "px";
+                bubblediv.style.fontSize = 9 * pageView.viewport.fontScale + 'px';
+                bubblediv.style.fontFamily = "gill";   
+                bubblediv.style.visibility = "hidden";
+                bubblediv.style.padding = "15px";
+                bubblediv.style.zIndex = 100;
+                var text= references[i].text.split(";");
+                
+               // var text1 = document.createTextNode(text[0]);
+              //  var text2 = document.createTextNode(text[1]);
+                
+                var authors = document.createElement("P");
+                authors.textContent=text[0];
+                var title = document.createElement("P");
+                title.textContent=text[1];
+                bubblediv.appendChild(authors);
+                bubblediv.appendChild(title);
+                
+                var btn = document.createElement("BUTTON");
+                btn.style.padding = "5px";
+               
+                var t = document.createTextNode("Get info");
+                btn.appendChild(t);
+               //kurva point 
+                 btn.addEventListener('click', function() {
+                   
+                     if(this.t.textContent === "Get info"){
+                         this.t.textContent = "Loading..";
+                         getScholarData(this.title,this.btn,this.bubblediv);
+                     }
+                }.bind({t:t,btn:btn,bubblediv:bubblediv,title:text[1]}));
+                
+                 bubblediv.appendChild(btn);
+                // overlayDiv.appendChild(bubblediv);
+                pageView.div.appendChild(overlayDiv);
+                pageView.div.appendChild(bubblediv);
+
+                overlayDiv.addEventListener("click", function () {
+                    if(this.style.visibility === "visible"){
+                     this.style.visibility = "hidden";
+                }else{
+                    
+                   this.style.visibility = "visible"; 
+                }
+                }.bind(bubblediv));
+
+            /*    overlayDiv.addEventListener("mouseleave", function () {
+                   
+                    this.style.visibility = "hidden";
+                }.bind(bubblediv));*/
+
+
+
+
+
+            }
+        }
   // Use the rendered page to set the corresponding thumbnail image.
   if (PDFViewerApplication.pdfSidebar.isThumbnailViewVisible) {
     var thumbnailView = PDFViewerApplication.pdfThumbnailViewer.
@@ -2202,6 +2335,121 @@ localized.then(function webViewerLocalized() {
   document.getElementsByTagName('html')[0].dir = mozL10n.getDirection();
 });
 
+//kurva point
+function getReferences(blob){
+          var xhttp = new XMLHttpRequest();
+      
+
+      xhttp.open("POST", "http://localhost:8080/getref", true);
+      xhttp.setRequestHeader( 'Access-Control-Allow-Origin', '*');
+      xhttp.withCredentials = false;
+      var formData = new FormData();
+     formData.append("file", blob);
+
+
+      xhttp.onreadystatechange = function() {
+          
+          if(xhttp.readyState === XMLHttpRequest.DONE && xhttp.status === 200) {
+          var message=xhttp.responseText;
+          //console.log(message);
+          var refs = message.split("\n");
+          var line;
+          var i;
+          var headline = line=refs[0];
+          PDFViewerApplication.setTitleUsingUrl(headline);
+          for(i = 1; i < refs.length-1; i++){
+              line=refs[i];
+              if(line.length>10){
+              var larr= JSON.parse(line);
+              var text =larr.text;
+              text=text.replace("Title"," ; Title");
+
+              larr.text=text;
+              references.push(larr);
+          }
+          }
+          console.log("Loaded "+i+" citations");
+         //PDFViewerApplication.pdfViewer.update();
+         PDFViewerApplication.zoomOut();
+           PDFViewerApplication.zoomIn();
+      }
+      };
+      
+      xhttp.send(formData);
+    
+    
+}
+
+function getScholarData(refTitle,btn,bubblediv){
+          var xhttp = new XMLHttpRequest();
+      var  url = "https://scholar.google.cz/scholar?hl=cs&q=";
+      var title = refTitle.split(" ");
+      for(var i=0;i<title.length;i++){
+          url=url.concat(title[i]);
+          if(i<title.length-1){
+              url=url.concat("+");
+          }
+      }
+      
+      console.log("==================URL============");
+      console.log(url);
+      xhttp.open("GET", url, true);
+      xhttp.setRequestHeader( 'Access-Control-Allow-Origin', '*');
+      xhttp.withCredentials = false;
+      
+
+
+      xhttp.onreadystatechange = function() {
+          if(xhttp.readyState === XMLHttpRequest.DONE && xhttp.status === 200) {
+          var message=xhttp.responseText;
+         
+         var el = document.createElement( 'html' );
+         el.innerHTML = message;
+         
+       //  var e2=el.getElementsByClassName("gs_ri")[0];
+        
+          
+          
+           console.log(btn);
+          console.log(bubblediv);
+          var abst=el.getElementsByClassName("gs_rs")[0];
+          console.log(el);
+          
+          
+
+        if (typeof abst == "undefined") {
+            abst = document.createElement("div");
+            abst.innerHTML = "Sorry jako";
+        }else{
+            var str = abst.innerHTML; 
+            abst.innerHTML=str.replace("<br>","");
+        
+          console.log(abst);
+          }
+          bubblediv.appendChild(abst);
+         
+         
+         var link = el.getElementsByClassName("gs_rt")[0];
+         console.log(link);
+          bubblediv.appendChild(link);
+          
+         var other = el.getElementsByClassName( "gs_fl")[1];
+
+         var cit = document.createElement("p");
+            cit.innerHTML=other.childNodes[0].innerHTML;
+         
+         
+         console.log(cit);
+         bubblediv.appendChild(cit);
+         
+          btn.style.visibility = "hidden";
+      }
+      };
+      
+     xhttp.send();
+    
+    
+}
 /* Abstract factory for the print service. */
 var PDFPrintServiceFactory = {
   instance: {
