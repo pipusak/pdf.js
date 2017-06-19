@@ -10,8 +10,8 @@ var fs = require('fs');
 // HACK few hacks to let PDF.js be loaded not as a module in global space.
 require('./domstubs.js');
 
-// Run `gulp dist` to generate 'pdfjs-dist' npm package files.
-var pdfjsLib = require('../../build/dist');
+// Run `gulp dist-install` to generate 'pdfjs-dist' npm package files.
+var pdfjsLib = require('pdfjs-dist');
 
 // Loading file from file system into typed array
 var pdfPath = process.argv[2] || '../../web/compressed.tracemonkey-pldi-09.pdf';
@@ -39,14 +39,15 @@ function writeToFile(svgdump, pageNum) {
 function getFileNameFromPath(path) {
   var index = path.lastIndexOf('/');
   var extIndex = path.lastIndexOf('.');
-  return path.substring(index , extIndex);
+  return path.substring(index, extIndex);
 }
 
 // Will be using promises to load document, pages and misc data instead of
 // callback.
 pdfjsLib.getDocument({
   data: data,
-  disableNativeImageDecoder: true,
+  // Try to export JPEG images directly if they don't need any further processing.
+  nativeImageDecoderSupport: pdfjsLib.NativeImageDecoding.DISPLAY
 }).then(function (doc) {
   var numPages = doc.numPages;
   console.log('# Document Loaded');

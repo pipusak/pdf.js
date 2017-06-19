@@ -13,23 +13,50 @@
  * limitations under the License.
  */
 
-import { CMapCompressionType } from '../../src/shared/util';
+import { CMapCompressionType, isNodeJS } from '../../src/shared/util';
+
+class NodeFileReaderFactory {
+  static fetch(params) {
+    var fs = require('fs');
+    var file = fs.readFileSync(params.path);
+    return new Uint8Array(file);
+  }
+}
+
+const TEST_PDFS_PATH = {
+  dom: '../pdfs/',
+  node: './test/pdfs/',
+};
+
+function buildGetDocumentParams(filename, options) {
+  let params = Object.create(null);
+  if (isNodeJS()) {
+    params.data = NodeFileReaderFactory.fetch({
+      path: TEST_PDFS_PATH.node + filename,
+    });
+  } else {
+    params.url = new URL(TEST_PDFS_PATH.dom + filename, window.location).href;
+  }
+  for (let option in options) {
+    params[option] = options[option];
+  }
+  return params;
+}
 
 class NodeCMapReaderFactory {
-  constructor(params) {
-    this.baseUrl = params.baseUrl || null;
-    this.isCompressed = params.isCompressed || false;
+  constructor({ baseUrl = null, isCompressed = false, }) {
+    this.baseUrl = baseUrl;
+    this.isCompressed = isCompressed;
   }
 
-  fetch(params) {
-    var name = params.name;
+  fetch({ name, }) {
     if (!name) {
       return Promise.reject(new Error('CMap name must be specified.'));
     }
     return new Promise((resolve, reject) => {
-      var url = this.baseUrl + name + (this.isCompressed ? '.bcmap' : '');
+      let url = this.baseUrl + name + (this.isCompressed ? '.bcmap' : '');
 
-      var fs = require('fs');
+      let fs = require('fs');
       fs.readFile(url, (error, data) => {
         if (error || !data) {
           reject(new Error('Unable to load ' +
@@ -48,5 +75,8 @@ class NodeCMapReaderFactory {
 }
 
 export {
+  NodeFileReaderFactory,
   NodeCMapReaderFactory,
+  buildGetDocumentParams,
+  TEST_PDFS_PATH,
 };

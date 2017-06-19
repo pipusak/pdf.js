@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { FindStates } from './pdf_find_controller';
-import { mozL10n } from './ui_utils';
+import { FindState } from './pdf_find_controller';
+import { NullL10n } from './ui_utils';
 
 /**
  * Creates a "search bar" given a set of DOM elements that act as controls
@@ -23,7 +23,7 @@ import { mozL10n } from './ui_utils';
  * is done by PDFFindController.
  */
 class PDFFindBar {
-  constructor(options) {
+  constructor(options, l10n = NullL10n) {
     this.opened = false;
 
     this.bar = options.bar || null;
@@ -38,6 +38,7 @@ class PDFFindBar {
     this.findNextButton = options.findNextButton || null;
     this.findController = options.findController || null;
     this.eventBus = options.eventBus;
+    this.l10n = l10n;
 
     if (this.findController === null) {
       throw new Error('PDFFindBar cannot be used without a ' +
@@ -107,24 +108,24 @@ class PDFFindBar {
     var status = '';
 
     switch (state) {
-      case FindStates.FIND_FOUND:
+      case FindState.FOUND:
         break;
 
-      case FindStates.FIND_PENDING:
+      case FindState.PENDING:
         status = 'pending';
         break;
 
-      case FindStates.FIND_NOTFOUND:
-        findMsg = mozL10n.get('find_not_found', null, 'Phrase not found');
+      case FindState.NOT_FOUND:
+        findMsg = this.l10n.get('find_not_found', null, 'Phrase not found');
         notFound = true;
         break;
 
-      case FindStates.FIND_WRAPPED:
+      case FindState.WRAPPED:
         if (previous) {
-          findMsg = mozL10n.get('find_reached_top', null,
+          findMsg = this.l10n.get('find_reached_top', null,
             'Reached top of document, continued from bottom');
         } else {
-          findMsg = mozL10n.get('find_reached_bottom', null,
+          findMsg = this.l10n.get('find_reached_bottom', null,
             'Reached end of document, continued from top');
         }
         break;
@@ -137,7 +138,9 @@ class PDFFindBar {
     }
 
     this.findField.setAttribute('data-status', status);
-    this.findMsg.textContent = findMsg;
+    Promise.resolve(findMsg).then((msg) => {
+      this.findMsg.textContent = msg;
+    });
 
     this.updateResultsCount(matchCount);
     this._adjustWidth();

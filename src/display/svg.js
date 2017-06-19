@@ -28,7 +28,7 @@ if (typeof PDFJSDev === 'undefined' ||
 var SVG_DEFAULTS = {
   fontStyle: 'normal',
   fontWeight: 'normal',
-  fillColor: '#000000'
+  fillColor: '#000000',
 };
 
 var convertImgDataToPng = (function convertImgDataToPngClosure() {
@@ -277,7 +277,7 @@ var SVGExtraState = (function SVGExtraStateClosure() {
     setCurrentPoint: function SVGExtraState_setCurrentPoint(x, y) {
       this.x = x;
       this.y = y;
-    }
+    },
   };
   return SVGExtraState;
 })();
@@ -290,7 +290,7 @@ SVGGraphics = (function SVGGraphicsClosure() {
 
     for (var x = 0; x < opListLen; x++) {
       if (opList[x].fn === 'save') {
-        opTree.push({'fnId': 92, 'fn': 'group', 'items': []});
+        opTree.push({ 'fnId': 92, 'fn': 'group', 'items': [], });
         tmp.push(opTree);
         opTree = opTree[opTree.length - 1].items;
         continue;
@@ -403,7 +403,6 @@ SVGGraphics = (function SVGGraphicsClosure() {
       var fnArrayLen = fnArray.length;
       var argsArray = operatorList.argsArray;
 
-      var self = this;
       for (var i = 0; i < fnArrayLen; i++) {
         if (OPS.dependency === fnArray[i]) {
           var deps = argsArray[i];
@@ -412,12 +411,12 @@ SVGGraphics = (function SVGGraphicsClosure() {
             var common = obj.substring(0, 2) === 'g_';
             var promise;
             if (common) {
-              promise = new Promise(function(resolve) {
-                self.commonObjs.get(obj, resolve);
+              promise = new Promise((resolve) => {
+                this.commonObjs.get(obj, resolve);
               });
             } else {
-              promise = new Promise(function(resolve) {
-                self.objs.get(obj, resolve);
+              promise = new Promise((resolve) => {
+                this.objs.get(obj, resolve);
               });
             }
             this.current.dependencies.push(promise);
@@ -438,12 +437,12 @@ SVGGraphics = (function SVGGraphicsClosure() {
       this.viewport = viewport;
 
       var svgElement = this._initialize(viewport);
-      return this.loadDependencies(operatorList).then(function () {
+      return this.loadDependencies(operatorList).then(() => {
         this.transformMatrix = IDENTITY_MATRIX;
         var opTree = this.convertOpList(operatorList);
         this.executeOpTree(opTree);
         return svgElement;
-      }.bind(this));
+      });
     },
 
     convertOpList: function SVGGraphics_convertOpList(operatorList) {
@@ -459,7 +458,11 @@ SVGGraphics = (function SVGGraphicsClosure() {
 
       for (var x = 0; x < fnArrayLen; x++) {
         var fnId = fnArray[x];
-        opList.push({'fnId': fnId, 'fn': REVOPS[fnId], 'args': argsArray[x]});
+        opList.push({
+          'fnId': fnId,
+          'fn': REVOPS[fnId],
+          'args': argsArray[x],
+        });
       }
       return opListToTree(opList);
     },
@@ -693,7 +696,8 @@ SVGGraphics = (function SVGGraphicsClosure() {
 
         var width = glyph.width;
         var character = glyph.fontChar;
-        var charWidth = width * widthAdvanceScale + charSpacing * fontDirection;
+        var spacing = (glyph.isSpace ? wordSpacing : 0) + charSpacing;
+        var charWidth = width * widthAdvanceScale + spacing * fontDirection;
         x += charWidth;
 
         current.tspan.textContent += character;
@@ -1029,8 +1033,8 @@ SVGGraphics = (function SVGGraphicsClosure() {
       var imgObj = this.objs.get(objId);
       var imgEl = document.createElementNS(NS, 'svg:image');
       imgEl.setAttributeNS(XLINK_NS, 'xlink:href', imgObj.src);
-      imgEl.setAttributeNS(null, 'width', imgObj.width + 'px');
-      imgEl.setAttributeNS(null, 'height', imgObj.height + 'px');
+      imgEl.setAttributeNS(null, 'width', pf(w));
+      imgEl.setAttributeNS(null, 'height', pf(h));
       imgEl.setAttributeNS(null, 'x', '0');
       imgEl.setAttributeNS(null, 'y', pf(-h));
       imgEl.setAttributeNS(null, 'transform',
@@ -1187,7 +1191,7 @@ SVGGraphics = (function SVGGraphicsClosure() {
         }
       }
       return this.tgrp;
-    }
+    },
   };
   return SVGGraphics;
 })();

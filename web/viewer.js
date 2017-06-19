@@ -93,7 +93,8 @@ function getViewerConfiguration() {
       lastPageButton: document.getElementById('lastPage'),
       pageRotateCwButton: document.getElementById('pageRotateCw'),
       pageRotateCcwButton: document.getElementById('pageRotateCcw'),
-      toggleHandToolButton: document.getElementById('toggleHandTool'),
+      cursorSelectToolButton: document.getElementById('cursorSelectTool'),
+      cursorHandToolButton: document.getElementById('cursorHandTool'),
       documentPropertiesButton: document.getElementById('documentProperties'),
     },
     fullscreen: {
@@ -126,7 +127,7 @@ function getViewerConfiguration() {
       findResultsCount: document.getElementById('findResultsCount'),
       findStatusIcon: document.getElementById('findStatusIcon'),
       findPreviousButton: document.getElementById('findPrevious'),
-      findNextButton: document.getElementById('findNext')
+      findNextButton: document.getElementById('findNext'),
     },
     passwordOverlay: {
       overlayName: 'passwordOverlay',
@@ -134,7 +135,7 @@ function getViewerConfiguration() {
       label: document.getElementById('passwordText'),
       input: document.getElementById('password'),
       submitButton: document.getElementById('passwordSubmit'),
-      cancelButton: document.getElementById('passwordCancel')
+      cancelButton: document.getElementById('passwordCancel'),
     },
     documentProperties: {
       overlayName: 'documentPropertiesOverlay',
@@ -152,8 +153,8 @@ function getViewerConfiguration() {
         'creator': document.getElementById('creatorField'),
         'producer': document.getElementById('producerField'),
         'version': document.getElementById('versionField'),
-        'pageCount': document.getElementById('pageCountField')
-      }
+        'pageCount': document.getElementById('pageCountField'),
+      },
     },
     errorWrapper: {
       container: document.getElementById('errorWrapper'),
@@ -166,7 +167,7 @@ function getViewerConfiguration() {
     printContainer: document.getElementById('printContainer'),
     openFileInputName: 'fileInput',
     debuggerScriptPath: './debugger.js',
-    defaultUrl: DEFAULT_URL
+    defaultUrl: DEFAULT_URL,
   };
 }
 

@@ -13,107 +13,46 @@
  * limitations under the License.
  */
 
-'use strict';
-
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define('pdfjs/core/evaluator', ['exports', 'pdfjs/shared/util',
-      'pdfjs/core/primitives', 'pdfjs/core/stream', 'pdfjs/core/parser',
-      'pdfjs/core/image', 'pdfjs/core/colorspace', 'pdfjs/core/murmurhash3',
-      'pdfjs/core/fonts', 'pdfjs/core/function', 'pdfjs/core/pattern',
-      'pdfjs/core/cmap', 'pdfjs/core/metrics', 'pdfjs/core/bidi',
-      'pdfjs/core/encodings', 'pdfjs/core/standard_fonts',
-      'pdfjs/core/unicode', 'pdfjs/core/glyphlist'], factory);
-  } else if (typeof exports !== 'undefined') {
-    factory(exports, require('../shared/util.js'), require('./primitives.js'),
-      require('./stream.js'), require('./parser.js'), require('./image.js'),
-      require('./colorspace.js'), require('./murmurhash3.js'),
-      require('./fonts.js'), require('./function.js'), require('./pattern.js'),
-      require('./cmap.js'), require('./metrics.js'), require('./bidi.js'),
-      require('./encodings.js'), require('./standard_fonts.js'),
-      require('./unicode.js'), require('./glyphlist.js'));
-  } else {
-    factory((root.pdfjsCoreEvaluator = {}), root.pdfjsSharedUtil,
-      root.pdfjsCorePrimitives, root.pdfjsCoreStream, root.pdfjsCoreParser,
-      root.pdfjsCoreImage, root.pdfjsCoreColorSpace, root.pdfjsCoreMurmurHash3,
-      root.pdfjsCoreFonts, root.pdfjsCoreFunction, root.pdfjsCorePattern,
-      root.pdfjsCoreCMap, root.pdfjsCoreMetrics, root.pdfjsCoreBidi,
-      root.pdfjsCoreEncodings, root.pdfjsCoreStandardFonts,
-      root.pdfjsCoreUnicode, root.pdfjsCoreGlyphList);
-  }
-}(this, function (exports, sharedUtil, corePrimitives, coreStream, coreParser,
-                  coreImage, coreColorSpace, coreMurmurHash3, coreFonts,
-                  coreFunction, corePattern, coreCMap, coreMetrics, coreBidi,
-                  coreEncodings, coreStandardFonts, coreUnicode,
-                  coreGlyphList) {
-
-var FONT_IDENTITY_MATRIX = sharedUtil.FONT_IDENTITY_MATRIX;
-var IDENTITY_MATRIX = sharedUtil.IDENTITY_MATRIX;
-var UNSUPPORTED_FEATURES = sharedUtil.UNSUPPORTED_FEATURES;
-var ImageKind = sharedUtil.ImageKind;
-var OPS = sharedUtil.OPS;
-var TextRenderingMode = sharedUtil.TextRenderingMode;
-var CMapCompressionType = sharedUtil.CMapCompressionType;
-var Util = sharedUtil.Util;
-var assert = sharedUtil.assert;
-var createPromiseCapability = sharedUtil.createPromiseCapability;
-var error = sharedUtil.error;
-var info = sharedUtil.info;
-var isArray = sharedUtil.isArray;
-var isNum = sharedUtil.isNum;
-var isString = sharedUtil.isString;
-var getLookupTableFactory = sharedUtil.getLookupTableFactory;
-var warn = sharedUtil.warn;
-var Dict = corePrimitives.Dict;
-var Name = corePrimitives.Name;
-var isEOF = corePrimitives.isEOF;
-var isCmd = corePrimitives.isCmd;
-var isDict = corePrimitives.isDict;
-var isName = corePrimitives.isName;
-var isRef = corePrimitives.isRef;
-var isStream = corePrimitives.isStream;
-var DecodeStream = coreStream.DecodeStream;
-var JpegStream = coreStream.JpegStream;
-var Stream = coreStream.Stream;
-var Lexer = coreParser.Lexer;
-var Parser = coreParser.Parser;
-var PDFImage = coreImage.PDFImage;
-var ColorSpace = coreColorSpace.ColorSpace;
-var MurmurHash3_64 = coreMurmurHash3.MurmurHash3_64;
-var ErrorFont = coreFonts.ErrorFont;
-var FontFlags = coreFonts.FontFlags;
-var Font = coreFonts.Font;
-var IdentityToUnicodeMap = coreFonts.IdentityToUnicodeMap;
-var ToUnicodeMap = coreFonts.ToUnicodeMap;
-var getFontType = coreFonts.getFontType;
-var isPDFFunction = coreFunction.isPDFFunction;
-var PDFFunction = coreFunction.PDFFunction;
-var Pattern = corePattern.Pattern;
-var getTilingPatternIR = corePattern.getTilingPatternIR;
-var CMapFactory = coreCMap.CMapFactory;
-var IdentityCMap = coreCMap.IdentityCMap;
-var getMetrics = coreMetrics.getMetrics;
-var bidi = coreBidi.bidi;
-var WinAnsiEncoding = coreEncodings.WinAnsiEncoding;
-var StandardEncoding = coreEncodings.StandardEncoding;
-var MacRomanEncoding = coreEncodings.MacRomanEncoding;
-var SymbolSetEncoding = coreEncodings.SymbolSetEncoding;
-var ZapfDingbatsEncoding = coreEncodings.ZapfDingbatsEncoding;
-var getEncoding = coreEncodings.getEncoding;
-var getStdFontMap = coreStandardFonts.getStdFontMap;
-var getSerifFonts = coreStandardFonts.getSerifFonts;
-var getSymbolsFonts = coreStandardFonts.getSymbolsFonts;
-var getNormalizedUnicodes = coreUnicode.getNormalizedUnicodes;
-var reverseIfRtl = coreUnicode.reverseIfRtl;
-var getUnicodeForGlyph = coreUnicode.getUnicodeForGlyph;
-var getGlyphsUnicode = coreGlyphList.getGlyphsUnicode;
+import {
+  assert, CMapCompressionType, createPromiseCapability, error,
+  FONT_IDENTITY_MATRIX, getLookupTableFactory, IDENTITY_MATRIX, ImageKind, info,
+  isArray, isNum, isString, NativeImageDecoding, OPS, TextRenderingMode,
+  UNSUPPORTED_FEATURES, Util, warn
+} from '../shared/util';
+import { CMapFactory, IdentityCMap } from './cmap';
+import { DecodeStream, JpegStream, Stream } from './stream';
+import {
+  Dict, isCmd, isDict, isEOF, isName, isRef, isStream, Name
+} from './primitives';
+import {
+  ErrorFont, Font, FontFlags, getFontType, IdentityToUnicodeMap, ToUnicodeMap
+} from './fonts';
+import {
+  getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding,
+  WinAnsiEncoding, ZapfDingbatsEncoding
+} from './encodings';
+import {
+  getNormalizedUnicodes, getUnicodeForGlyph, reverseIfRtl
+} from './unicode';
+import {
+  getSerifFonts, getStdFontMap, getSymbolsFonts
+} from './standard_fonts';
+import { getTilingPatternIR, Pattern } from './pattern';
+import { isPDFFunction, PDFFunction } from './function';
+import { Lexer, Parser } from './parser';
+import { bidi } from './bidi';
+import { ColorSpace } from './colorspace';
+import { getGlyphsUnicode } from './glyphlist';
+import { getMetrics } from './metrics';
+import { MurmurHash3_64 } from './murmurhash3';
+import { PDFImage } from './image';
 
 var PartialEvaluator = (function PartialEvaluatorClosure() {
-  var DefaultPartialEvaluatorOptions = {
+  const DefaultPartialEvaluatorOptions = {
     forceDataSchema: false,
     maxImageSize: -1,
     disableFontFace: false,
-    disableNativeImageDecoder: false,
+    nativeImageDecoderSupport: NativeImageDecoding.DECODE,
     ignoreErrors: false,
   };
 
@@ -140,7 +79,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         var data = message.data;
         return new Stream(data, 0, data.length, image.dict);
       });
-    }
+    },
   };
   /**
    * Checks if the image can be decoded and displayed by the browser without any
@@ -170,8 +109,8 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
            cs.isDefaultDecode(dict.getArray('Decode', 'D'));
   };
 
-  function PartialEvaluator(pdfManager, xref, handler, pageIndex,
-                            idFactory, fontCache, builtInCMapCache, options) {
+  function PartialEvaluator({ pdfManager, xref, handler, pageIndex, idFactory,
+                              fontCache, builtInCMapCache, options = null, }) {
     this.pdfManager = pdfManager;
     this.xref = xref;
     this.handler = handler;
@@ -186,7 +125,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       if (cachedCMap) {
         return Promise.resolve(cachedCMap);
       }
-      return handler.sendWithPromise('FetchBuiltInCMap', {
+      return this.handler.sendWithPromise('FetchBuiltInCMap', {
         name,
       }).then((data) => {
         if (data.compressionType !== CMapCompressionType.NONE) {
@@ -215,7 +154,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
     reset: function TimeSlotManager_reset() {
       this.endTime = Date.now() + TIME_SLOT_DURATION_MS;
       this.checked = 0;
-    }
+    },
   };
 
   // Convert PDF blend mode names to HTML5 blend mode names.
@@ -359,7 +298,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
           bbox,
           smask,
           isolated: false,
-          knockout: false
+          knockout: false,
         };
 
         var groupSubtype = group.get('S');
@@ -381,22 +320,25 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
 
       operatorList.addOp(OPS.paintFormXObjectBegin, [matrix, bbox]);
 
-      return this.getOperatorList(xobj, task,
-                                  (dict.get('Resources') || resources),
-                                  operatorList, initialState).then(function () {
-          operatorList.addOp(OPS.paintFormXObjectEnd, []);
+      return this.getOperatorList({
+        stream: xobj,
+        task,
+        resources: dict.get('Resources') || resources,
+        operatorList,
+        initialState,
+      }).then(function () {
+        operatorList.addOp(OPS.paintFormXObjectEnd, []);
 
-          if (group) {
-            operatorList.addOp(OPS.endGroup, [groupOptions]);
-          }
-        });
+        if (group) {
+          operatorList.addOp(OPS.endGroup, [groupOptions]);
+        }
+      });
     },
 
     buildPaintImageXObject:
         function PartialEvaluator_buildPaintImageXObject(resources, image,
                                                          inline, operatorList,
                                                          cacheKey, imageCache) {
-      var self = this;
       var dict = image.dict;
       var w = dict.get('Width', 'W');
       var h = dict.get('Height', 'H');
@@ -458,43 +400,47 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         return;
       }
 
-      var useNativeImageDecoder = !this.options.disableNativeImageDecoder;
+      var nativeImageDecoderSupport = this.options.nativeImageDecoderSupport;
       // If there is no imageMask, create the PDFImage and a lot
       // of image processing can be done here.
       var objId = 'img_' + this.idFactory.createObjId();
       operatorList.addDependency(objId);
       args = [objId, w, h];
 
-      if (useNativeImageDecoder &&
+      if (nativeImageDecoderSupport !== NativeImageDecoding.NONE &&
           !softMask && !mask && image instanceof JpegStream &&
           NativeImageDecoder.isSupported(image, this.xref, resources)) {
         // These JPEGs don't need any more processing so we can just send it.
         operatorList.addOp(OPS.paintJpegXObject, args);
-        this.handler.send('obj',
-          [objId, this.pageIndex, 'JpegStream',
-           image.getIR(this.options.forceDataSchema)]);
+        this.handler.send('obj', [objId, this.pageIndex, 'JpegStream',
+                                  image.getIR(this.options.forceDataSchema)]);
+        if (cacheKey) {
+          imageCache[cacheKey] = {
+            fn: OPS.paintJpegXObject,
+            args,
+          };
+        }
         return;
       }
 
       // Creates native image decoder only if a JPEG image or mask is present.
       var nativeImageDecoder = null;
-      if (useNativeImageDecoder &&
+      if (nativeImageDecoderSupport === NativeImageDecoding.DECODE &&
           (image instanceof JpegStream || mask instanceof JpegStream ||
            softMask instanceof JpegStream)) {
-        nativeImageDecoder = new NativeImageDecoder(self.xref, resources,
-          self.handler, self.options.forceDataSchema);
+        nativeImageDecoder = new NativeImageDecoder(this.xref, resources,
+          this.handler, this.options.forceDataSchema);
       }
 
-      PDFImage.buildImage(self.handler, self.xref, resources, image, inline,
-                          nativeImageDecoder).
-        then(function(imageObj) {
-          var imgData = imageObj.createImageData(/* forceRGBA = */ false);
-          self.handler.send('obj', [objId, self.pageIndex, 'Image', imgData],
-            [imgData.data.buffer]);
-        }).then(undefined, function (reason) {
-          warn('Unable to decode image: ' + reason);
-          self.handler.send('obj', [objId, self.pageIndex, 'Image', null]);
-        });
+      PDFImage.buildImage(this.handler, this.xref, resources, image, inline,
+                          nativeImageDecoder).then((imageObj) => {
+        var imgData = imageObj.createImageData(/* forceRGBA = */ false);
+        this.handler.send('obj', [objId, this.pageIndex, 'Image', imgData],
+          [imgData.data.buffer]);
+      }).catch((reason) => {
+        warn('Unable to decode image: ' + reason);
+        this.handler.send('obj', [objId, this.pageIndex, 'Image', null]);
+      });
 
       operatorList.addOp(OPS.paintImageXObject, args);
       if (cacheKey) {
@@ -511,7 +457,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       var smaskContent = smask.get('G');
       var smaskOptions = {
         subtype: smask.get('S').name,
-        backdrop: smask.get('BC')
+        backdrop: smask.get('BC'),
       };
 
       // The SMask might have a alpha/luminosity value transfer function --
@@ -534,26 +480,40 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
                                    stateManager.state.clone());
     },
 
-    handleTilingType:
-        function PartialEvaluator_handleTilingType(fn, args, resources,
-                                                   pattern, patternDict,
-                                                   operatorList, task) {
+    handleTilingType(fn, args, resources, pattern, patternDict, operatorList,
+                     task) {
       // Create an IR of the pattern code.
-      var tilingOpList = new OperatorList();
+      let tilingOpList = new OperatorList();
       // Merge the available resources, to prevent issues when the patternDict
       // is missing some /Resources entries (fixes issue6541.pdf).
-      var resourcesArray = [patternDict.get('Resources'), resources];
-      var patternResources = Dict.merge(this.xref, resourcesArray);
+      let resourcesArray = [patternDict.get('Resources'), resources];
+      let patternResources = Dict.merge(this.xref, resourcesArray);
 
-      return this.getOperatorList(pattern, task, patternResources,
-                                  tilingOpList).then(function () {
-        // Add the dependencies to the parent operator list so they are
-        // resolved before sub operator list is executed synchronously.
-        operatorList.addDependencies(tilingOpList.dependencies);
-        operatorList.addOp(fn, getTilingPatternIR({
+      return this.getOperatorList({
+        stream: pattern,
+        task,
+        resources: patternResources,
+        operatorList: tilingOpList,
+      }).then(function() {
+        return getTilingPatternIR({
           fnArray: tilingOpList.fnArray,
-          argsArray: tilingOpList.argsArray
-        }, patternDict, args));
+          argsArray: tilingOpList.argsArray,
+        }, patternDict, args);
+      }).then(function(tilingPatternIR) {
+        // Add the dependencies to the parent operator list so they are
+        // resolved before the sub operator list is executed synchronously.
+        operatorList.addDependencies(tilingOpList.dependencies);
+        operatorList.addOp(fn, tilingPatternIR);
+      }, (reason) => {
+        if (this.options.ignoreErrors) {
+          // Error(s) in the TilingPattern -- sending unsupported feature
+          // notification and allow rendering to continue.
+          this.handler.send('UnsupportedFeature',
+                            { featureId: UNSUPPORTED_FEATURES.unknown, });
+          warn(`handleTilingType - ignoring pattern: "${reason}".`);
+          return;
+        }
+        throw reason;
       });
     },
 
@@ -567,25 +527,23 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         fontName = fontArgs[0].name;
       }
 
-      var self = this;
-      return this.loadFont(fontName, fontRef, resources).then(
-          function (translated) {
+      return this.loadFont(fontName, fontRef, resources).then((translated) => {
         if (!translated.font.isType3Font) {
           return translated;
         }
-        return translated.loadType3Data(self, resources, operatorList, task).
+        return translated.loadType3Data(this, resources, operatorList, task).
           then(function () {
           return translated;
-        }, function (reason) {
+        }).catch((reason) => {
           // Error in the font data -- sending unsupported feature notification.
-          self.handler.send('UnsupportedFeature',
-                            {featureId: UNSUPPORTED_FEATURES.font});
+          this.handler.send('UnsupportedFeature',
+                            { featureId: UNSUPPORTED_FEATURES.font, });
           return new TranslatedFont('g_font_error',
             new ErrorFont('Type3 font load error: ' + reason), translated.font);
         });
-      }).then(function (translated) {
+      }).then((translated) => {
         state.font = translated.font;
-        translated.send(self.handler);
+        translated.send(this.handler);
         return translated.loadedName;
       });
     },
@@ -596,7 +554,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       var isAddToPathSet = !!(state.textRenderingMode &
                               TextRenderingMode.ADD_TO_PATH_FLAG);
       if (font.data && (isAddToPathSet || this.options.disableFontFace)) {
-        var buildPath = function (fontChar) {
+        var buildPath = (fontChar) => {
           if (!font.renderer.hasBuiltPath(fontChar)) {
             var path = font.renderer.getPathJs(fontChar);
             this.handler.send('commonobj', [
@@ -605,7 +563,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
               path
             ]);
           }
-        }.bind(this);
+        };
 
         for (var i = 0, ii = glyphs.length; i < ii; i++) {
           var glyph = glyphs[i];
@@ -629,11 +587,10 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       // This array holds the converted/processed state data.
       var gStateObj = [];
       var gStateKeys = gState.getKeys();
-      var self = this;
       var promise = Promise.resolve();
       for (var i = 0, ii = gStateKeys.length; i < ii; i++) {
-        var key = gStateKeys[i];
-        var value = gState.get(key);
+        let key = gStateKeys[i];
+        let value = gState.get(key);
         switch (key) {
           case 'Type':
             break;
@@ -649,8 +606,8 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             gStateObj.push([key, value]);
             break;
           case 'Font':
-            promise = promise.then(function () {
-              return self.handleSetFont(resources, null, value[0], operatorList,
+            promise = promise.then(() => {
+              return this.handleSetFont(resources, null, value[0], operatorList,
                                         task, stateManager.state).
                 then(function (loadedName) {
                   operatorList.addDependency(loadedName);
@@ -667,10 +624,10 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
               break;
             }
             if (isDict(value)) {
-              promise = promise.then(function (dict) {
-                return self.handleSMask(dict, resources, operatorList,
+              promise = promise.then(() => {
+                return this.handleSMask(value, resources, operatorList,
                                         task, stateManager);
-              }.bind(this, value));
+              });
               gStateObj.push([key, true]);
             } else {
               warn('Unsupported SMask type');
@@ -773,7 +730,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
           }
         } else {
           fontAliases[hash] = {
-            fontID: Font.getFontID()
+            fontID: Font.getFontID(),
           };
         }
 
@@ -824,7 +781,6 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         translatedPromise = Promise.reject(e);
       }
 
-      var self = this;
       translatedPromise.then(function (translatedFont) {
         if (translatedFont.fontType !== undefined) {
           var xrefFontStats = xref.stats.fontTypes;
@@ -833,11 +789,11 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
 
         fontCapability.resolve(new TranslatedFont(font.loadedName,
           translatedFont, font));
-      }, function (reason) {
+      }).catch((reason) => {
         // TODO fontCapability.reject?
         // Error in the font data -- sending unsupported feature notification.
-        self.handler.send('UnsupportedFeature',
-                          {featureId: UNSUPPORTED_FEATURES.font});
+        this.handler.send('UnsupportedFeature',
+                          { featureId: UNSUPPORTED_FEATURES.font, });
 
         try {
           // error, but it's still nice to have font type reported
@@ -903,21 +859,22 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       return Promise.resolve();
     },
 
-    getOperatorList: function PartialEvaluator_getOperatorList(stream,
-                                                               task,
-                                                               resources,
-                                                               operatorList,
-                                                               initialState) {
+    getOperatorList({ stream, task, resources, operatorList,
+                      initialState = null, }) {
+      // Ensure that `resources`/`initialState` is correctly initialized,
+      // even if the provided parameter is e.g. `null`.
+      resources = resources || Dict.empty;
+      initialState = initialState || new EvalState();
+
+      assert(operatorList, 'getOperatorList: missing "operatorList" parameter');
+
       var self = this;
       var xref = this.xref;
       var imageCache = Object.create(null);
 
-      assert(operatorList);
-
-      resources = (resources || Dict.empty);
       var xobjs = (resources.get('XObject') || Dict.empty);
       var patterns = (resources.get('Pattern') || Dict.empty);
-      var stateManager = new StateManager(initialState || new EvalState());
+      var stateManager = new StateManager(initialState);
       var preprocessor = new EvaluatorPreprocessor(stream, xref, stateManager);
       var timeSlotManager = new TimeSlotManager();
 
@@ -1203,34 +1160,33 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         // Closing those for them.
         closePendingRestoreOPS();
         resolve();
-      }).catch(function(reason) {
+      }).catch((reason) => {
         if (this.options.ignoreErrors) {
           // Error(s) in the OperatorList -- sending unsupported feature
           // notification and allow rendering to continue.
           this.handler.send('UnsupportedFeature',
-                            { featureId: UNSUPPORTED_FEATURES.unknown });
+                            { featureId: UNSUPPORTED_FEATURES.unknown, });
           warn('getOperatorList - ignoring errors during task: ' + task.name);
 
           closePendingRestoreOPS();
           return;
         }
         throw reason;
-      }.bind(this));
+      });
     },
 
-    getTextContent:
-        function PartialEvaluator_getTextContent(stream, task, resources,
-                                                 stateManager,
-                                                 normalizeWhitespace,
-                                                 combineTextItems) {
-
-      stateManager = (stateManager || new StateManager(new TextState()));
+    getTextContent({ stream, task, resources, stateManager = null,
+                     normalizeWhitespace = false, combineTextItems = false, }) {
+      // Ensure that `resources`/`stateManager` is correctly initialized,
+      // even if the provided parameter is e.g. `null`.
+      resources = resources || Dict.empty;
+      stateManager = stateManager || new StateManager(new TextState());
 
       var WhitespaceRegexp = /\s/g;
 
       var textContent = {
         items: [],
-        styles: Object.create(null)
+        styles: Object.create(null),
       };
       var textContentItem = {
         initialized: false,
@@ -1247,7 +1203,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         fakeMultiSpaceMax: -0,
         textRunBreakAllowed: false,
         transform: null,
-        fontName: null
+        fontName: null,
       };
       var SPACE_FACTOR = 0.3;
       var MULTI_SPACE_FACTOR = 1.5;
@@ -1255,8 +1211,6 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
 
       var self = this;
       var xref = this.xref;
-
-      resources = (xref.fetchIfRef(resources) || Dict.empty);
 
       // The xobj is parsed iff it's needed, e.g. if there is a `DO` cmd.
       var xobjs = null;
@@ -1276,7 +1230,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             fontFamily: font.fallbackName,
             ascent: font.ascent,
             descent: font.descent,
-            vertical: font.vertical
+            vertical: font.vertical,
           };
         }
         textContentItem.fontName = font.loadedName;
@@ -1362,7 +1316,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
           width: textChunk.width,
           height: textChunk.height,
           transform: textChunk.transform,
-          fontName: textChunk.fontName
+          fontName: textChunk.fontName,
         };
       }
 
@@ -1696,16 +1650,20 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
                 xObjStateManager.transform(matrix);
               }
 
-              next(self.getTextContent(xobj, task,
-                   xobj.dict.get('Resources') || resources, xObjStateManager,
-                   normalizeWhitespace, combineTextItems).then(
-                function (formTextContent) {
-                  Util.appendToArray(textContent.items, formTextContent.items);
-                  Util.extendObj(textContent.styles, formTextContent.styles);
+              next(self.getTextContent({
+                stream: xobj,
+                task,
+                resources: xobj.dict.get('Resources') || resources,
+                stateManager: xObjStateManager,
+                normalizeWhitespace,
+                combineTextItems,
+              }).then(function (formTextContent) {
+                Util.appendToArray(textContent.items, formTextContent.items);
+                Util.extendObj(textContent.styles, formTextContent.styles);
 
-                  xobjsCache.key = name;
-                  xobjsCache.texts = formTextContent;
-                }));
+                xobjsCache.key = name;
+                xobjsCache.texts = formTextContent;
+              }));
               return;
             case OPS.setGState:
               flushTextContentItem();
@@ -1735,7 +1693,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         }
         flushTextContentItem();
         resolve(textContent);
-      }).catch(function(reason) {
+      }).catch((reason) => {
         if (this.options.ignoreErrors) {
           // Error(s) in the TextContent -- allow text-extraction to continue.
           warn('getTextContent - ignoring errors during task: ' + task.name);
@@ -1744,7 +1702,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
           return textContent;
         }
         throw reason;
-      }.bind(this));
+      });
     },
 
     extractDataStructures:
@@ -1763,7 +1721,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
           properties.cidSystemInfo = {
             registry: cidSystemInfo.get('Registry'),
             ordering: cidSystemInfo.get('Ordering'),
-            supplement: cidSystemInfo.get('Supplement')
+            supplement: cidSystemInfo.get('Supplement'),
           };
         }
 
@@ -1848,10 +1806,10 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       properties.baseEncodingName = baseEncodingName;
       properties.hasEncoding = !!baseEncodingName || differences.length > 0;
       properties.dict = dict;
-      return toUnicodePromise.then(function(toUnicode) {
+      return toUnicodePromise.then((toUnicode) => {
         properties.toUnicode = toUnicode;
         return this.buildToUnicode(properties);
-      }.bind(this)).then(function (toUnicode) {
+      }).then(function (toUnicode) {
         properties.toUnicode = toUnicode;
         return properties;
       });
@@ -2312,7 +2270,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         baseDict,
         composite,
         type: type.name,
-        hash: hash ? hash.hexdigest() : ''
+        hash: hash ? hash.hexdigest() : '',
       };
     },
 
@@ -2358,14 +2316,14 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             defaultWidth: metrics.defaultWidth,
             flags,
             firstChar: 0,
-            lastChar: maxCharIndex
+            lastChar: maxCharIndex,
           };
-          return this.extractDataStructures(dict, dict, properties).then(
-              function (properties) {
-            properties.widths = this.buildCharCodeToWidth(metrics.widths,
-                                                          properties);
-            return new Font(baseFontName, null, properties);
-          }.bind(this));
+          return this.extractDataStructures(dict, dict, properties).
+            then((properties) => {
+              properties.widths = this.buildCharCodeToWidth(metrics.widths,
+                                                            properties);
+              return new Font(baseFontName, null, properties);
+            });
         }
       }
 
@@ -2441,7 +2399,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         capHeight: descriptor.get('CapHeight'),
         flags: descriptor.get('Flags'),
         italicAngle: descriptor.get('ItalicAngle'),
-        coded: false
+        coded: false,
       };
 
       var cMapPromise;
@@ -2462,18 +2420,17 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
         cMapPromise = Promise.resolve(undefined);
       }
 
-      return cMapPromise.then(function () {
+      return cMapPromise.then(() => {
         return this.extractDataStructures(dict, baseDict, properties);
-      }.bind(this)).then(function (properties) {
+      }).then((properties) => {
         this.extractWidths(dict, descriptor, properties);
 
         if (type === 'Type3') {
           properties.isType3Font = true;
         }
-
         return new Font(fontName.name, fontFile, properties);
-      }.bind(this));
-    }
+      });
+    },
   };
 
   return PartialEvaluator;
@@ -2521,29 +2478,33 @@ var TranslatedFont = (function TranslatedFontClosure() {
       var charProcOperatorList = Object.create(null);
 
       for (var i = 0, n = charProcKeys.length; i < n; ++i) {
-        loadCharProcsPromise = loadCharProcsPromise.then(function (key) {
+        let key = charProcKeys[i];
+        loadCharProcsPromise = loadCharProcsPromise.then(function () {
           var glyphStream = charProcs.get(key);
           var operatorList = new OperatorList();
-          return type3Evaluator.getOperatorList(glyphStream, task,
-                                                fontResources, operatorList).
-              then(function () {
+          return type3Evaluator.getOperatorList({
+            stream: glyphStream,
+            task,
+            resources: fontResources,
+            operatorList,
+          }).then(function () {
             charProcOperatorList[key] = operatorList.getIR();
 
             // Add the dependencies to the parent operator list so they are
             // resolved before sub operator list is executed synchronously.
             parentOperatorList.addDependencies(operatorList.dependencies);
-          }, function (reason) {
-            warn('Type3 font resource \"' + key + '\" is not available');
+          }).catch(function(reason) {
+            warn(`Type3 font resource "${key}" is not available.`);
             var operatorList = new OperatorList();
             charProcOperatorList[key] = operatorList.getIR();
           });
-        }.bind(this, charProcKeys[i]));
+        });
       }
       this.type3Loaded = loadCharProcsPromise.then(function () {
         translatedFont.charProcOperatorList = charProcOperatorList;
       });
       return this.type3Loaded;
-    }
+    },
   };
   return TranslatedFont;
 })();
@@ -2632,7 +2593,7 @@ var OperatorList = (function OperatorListClosure() {
       return {
         fnArray: this.fnArray,
         argsArray: this.argsArray,
-        length: this.length
+        length: this.length,
       };
     },
 
@@ -2652,12 +2613,12 @@ var OperatorList = (function OperatorListClosure() {
           length,
         },
         pageIndex: this.pageIndex,
-        intent: this.intent
+        intent: this.intent,
       }, transfers);
       this.dependencies = Object.create(null);
       this.fnArray.length = 0;
       this.argsArray.length = 0;
-    }
+    },
   };
 
   return OperatorList;
@@ -2682,7 +2643,7 @@ var StateManager = (function StateManagerClosure() {
     },
     transform(args) {
       this.state.ctm = Util.transform(this.state.ctm, args);
-    }
+    },
   };
   return StateManager;
 })();
@@ -2763,7 +2724,7 @@ var TextState = (function TextStateClosure() {
       clone.textLineMatrix = this.textLineMatrix.slice();
       clone.fontMatrix = this.fontMatrix.slice();
       return clone;
-    }
+    },
   };
   return TextState;
 })();
@@ -2791,100 +2752,101 @@ var EvaluatorPreprocessor = (function EvaluatorPreprocessorClosure() {
   // If variableArgs === false: exactly `numArgs` expected
   var getOPMap = getLookupTableFactory(function (t) {
     // Graphic state
-    t['w'] = { id: OPS.setLineWidth, numArgs: 1, variableArgs: false };
-    t['J'] = { id: OPS.setLineCap, numArgs: 1, variableArgs: false };
-    t['j'] = { id: OPS.setLineJoin, numArgs: 1, variableArgs: false };
-    t['M'] = { id: OPS.setMiterLimit, numArgs: 1, variableArgs: false };
-    t['d'] = { id: OPS.setDash, numArgs: 2, variableArgs: false };
-    t['ri'] = { id: OPS.setRenderingIntent, numArgs: 1, variableArgs: false };
-    t['i'] = { id: OPS.setFlatness, numArgs: 1, variableArgs: false };
-    t['gs'] = { id: OPS.setGState, numArgs: 1, variableArgs: false };
-    t['q'] = { id: OPS.save, numArgs: 0, variableArgs: false };
-    t['Q'] = { id: OPS.restore, numArgs: 0, variableArgs: false };
-    t['cm'] = { id: OPS.transform, numArgs: 6, variableArgs: false };
+    t['w'] = { id: OPS.setLineWidth, numArgs: 1, variableArgs: false, };
+    t['J'] = { id: OPS.setLineCap, numArgs: 1, variableArgs: false, };
+    t['j'] = { id: OPS.setLineJoin, numArgs: 1, variableArgs: false, };
+    t['M'] = { id: OPS.setMiterLimit, numArgs: 1, variableArgs: false, };
+    t['d'] = { id: OPS.setDash, numArgs: 2, variableArgs: false, };
+    t['ri'] = { id: OPS.setRenderingIntent, numArgs: 1, variableArgs: false, };
+    t['i'] = { id: OPS.setFlatness, numArgs: 1, variableArgs: false, };
+    t['gs'] = { id: OPS.setGState, numArgs: 1, variableArgs: false, };
+    t['q'] = { id: OPS.save, numArgs: 0, variableArgs: false, };
+    t['Q'] = { id: OPS.restore, numArgs: 0, variableArgs: false, };
+    t['cm'] = { id: OPS.transform, numArgs: 6, variableArgs: false, };
 
     // Path
-    t['m'] = { id: OPS.moveTo, numArgs: 2, variableArgs: false };
-    t['l'] = { id: OPS.lineTo, numArgs: 2, variableArgs: false };
-    t['c'] = { id: OPS.curveTo, numArgs: 6, variableArgs: false };
-    t['v'] = { id: OPS.curveTo2, numArgs: 4, variableArgs: false };
-    t['y'] = { id: OPS.curveTo3, numArgs: 4, variableArgs: false };
-    t['h'] = { id: OPS.closePath, numArgs: 0, variableArgs: false };
-    t['re'] = { id: OPS.rectangle, numArgs: 4, variableArgs: false };
-    t['S'] = { id: OPS.stroke, numArgs: 0, variableArgs: false };
-    t['s'] = { id: OPS.closeStroke, numArgs: 0, variableArgs: false };
-    t['f'] = { id: OPS.fill, numArgs: 0, variableArgs: false };
-    t['F'] = { id: OPS.fill, numArgs: 0, variableArgs: false };
-    t['f*'] = { id: OPS.eoFill, numArgs: 0, variableArgs: false };
-    t['B'] = { id: OPS.fillStroke, numArgs: 0, variableArgs: false };
-    t['B*'] = { id: OPS.eoFillStroke, numArgs: 0, variableArgs: false };
-    t['b'] = { id: OPS.closeFillStroke, numArgs: 0, variableArgs: false };
-    t['b*'] = { id: OPS.closeEOFillStroke, numArgs: 0, variableArgs: false };
-    t['n'] = { id: OPS.endPath, numArgs: 0, variableArgs: false };
+    t['m'] = { id: OPS.moveTo, numArgs: 2, variableArgs: false, };
+    t['l'] = { id: OPS.lineTo, numArgs: 2, variableArgs: false, };
+    t['c'] = { id: OPS.curveTo, numArgs: 6, variableArgs: false, };
+    t['v'] = { id: OPS.curveTo2, numArgs: 4, variableArgs: false, };
+    t['y'] = { id: OPS.curveTo3, numArgs: 4, variableArgs: false, };
+    t['h'] = { id: OPS.closePath, numArgs: 0, variableArgs: false, };
+    t['re'] = { id: OPS.rectangle, numArgs: 4, variableArgs: false, };
+    t['S'] = { id: OPS.stroke, numArgs: 0, variableArgs: false, };
+    t['s'] = { id: OPS.closeStroke, numArgs: 0, variableArgs: false, };
+    t['f'] = { id: OPS.fill, numArgs: 0, variableArgs: false, };
+    t['F'] = { id: OPS.fill, numArgs: 0, variableArgs: false, };
+    t['f*'] = { id: OPS.eoFill, numArgs: 0, variableArgs: false, };
+    t['B'] = { id: OPS.fillStroke, numArgs: 0, variableArgs: false, };
+    t['B*'] = { id: OPS.eoFillStroke, numArgs: 0, variableArgs: false, };
+    t['b'] = { id: OPS.closeFillStroke, numArgs: 0, variableArgs: false, };
+    t['b*'] = { id: OPS.closeEOFillStroke, numArgs: 0, variableArgs: false, };
+    t['n'] = { id: OPS.endPath, numArgs: 0, variableArgs: false, };
 
     // Clipping
-    t['W'] = { id: OPS.clip, numArgs: 0, variableArgs: false };
-    t['W*'] = { id: OPS.eoClip, numArgs: 0, variableArgs: false };
+    t['W'] = { id: OPS.clip, numArgs: 0, variableArgs: false, };
+    t['W*'] = { id: OPS.eoClip, numArgs: 0, variableArgs: false, };
 
     // Text
-    t['BT'] = { id: OPS.beginText, numArgs: 0, variableArgs: false };
-    t['ET'] = { id: OPS.endText, numArgs: 0, variableArgs: false };
-    t['Tc'] = { id: OPS.setCharSpacing, numArgs: 1, variableArgs: false };
-    t['Tw'] = { id: OPS.setWordSpacing, numArgs: 1, variableArgs: false };
-    t['Tz'] = { id: OPS.setHScale, numArgs: 1, variableArgs: false };
-    t['TL'] = { id: OPS.setLeading, numArgs: 1, variableArgs: false };
-    t['Tf'] = { id: OPS.setFont, numArgs: 2, variableArgs: false };
-    t['Tr'] = { id: OPS.setTextRenderingMode, numArgs: 1, variableArgs: false };
-    t['Ts'] = { id: OPS.setTextRise, numArgs: 1, variableArgs: false };
-    t['Td'] = { id: OPS.moveText, numArgs: 2, variableArgs: false };
-    t['TD'] = { id: OPS.setLeadingMoveText, numArgs: 2, variableArgs: false };
-    t['Tm'] = { id: OPS.setTextMatrix, numArgs: 6, variableArgs: false };
-    t['T*'] = { id: OPS.nextLine, numArgs: 0, variableArgs: false };
-    t['Tj'] = { id: OPS.showText, numArgs: 1, variableArgs: false };
-    t['TJ'] = { id: OPS.showSpacedText, numArgs: 1, variableArgs: false };
-    t['\''] = { id: OPS.nextLineShowText, numArgs: 1, variableArgs: false };
+    t['BT'] = { id: OPS.beginText, numArgs: 0, variableArgs: false, };
+    t['ET'] = { id: OPS.endText, numArgs: 0, variableArgs: false, };
+    t['Tc'] = { id: OPS.setCharSpacing, numArgs: 1, variableArgs: false, };
+    t['Tw'] = { id: OPS.setWordSpacing, numArgs: 1, variableArgs: false, };
+    t['Tz'] = { id: OPS.setHScale, numArgs: 1, variableArgs: false, };
+    t['TL'] = { id: OPS.setLeading, numArgs: 1, variableArgs: false, };
+    t['Tf'] = { id: OPS.setFont, numArgs: 2, variableArgs: false, };
+    t['Tr'] = { id: OPS.setTextRenderingMode, numArgs: 1,
+                variableArgs: false, };
+    t['Ts'] = { id: OPS.setTextRise, numArgs: 1, variableArgs: false, };
+    t['Td'] = { id: OPS.moveText, numArgs: 2, variableArgs: false, };
+    t['TD'] = { id: OPS.setLeadingMoveText, numArgs: 2, variableArgs: false, };
+    t['Tm'] = { id: OPS.setTextMatrix, numArgs: 6, variableArgs: false, };
+    t['T*'] = { id: OPS.nextLine, numArgs: 0, variableArgs: false, };
+    t['Tj'] = { id: OPS.showText, numArgs: 1, variableArgs: false, };
+    t['TJ'] = { id: OPS.showSpacedText, numArgs: 1, variableArgs: false, };
+    t['\''] = { id: OPS.nextLineShowText, numArgs: 1, variableArgs: false, };
     t['"'] = { id: OPS.nextLineSetSpacingShowText, numArgs: 3,
-               variableArgs: false };
+               variableArgs: false, };
 
     // Type3 fonts
-    t['d0'] = { id: OPS.setCharWidth, numArgs: 2, variableArgs: false };
+    t['d0'] = { id: OPS.setCharWidth, numArgs: 2, variableArgs: false, };
     t['d1'] = { id: OPS.setCharWidthAndBounds, numArgs: 6,
-                variableArgs: false };
+                variableArgs: false, };
 
     // Color
-    t['CS'] = { id: OPS.setStrokeColorSpace, numArgs: 1, variableArgs: false };
-    t['cs'] = { id: OPS.setFillColorSpace, numArgs: 1, variableArgs: false };
-    t['SC'] = { id: OPS.setStrokeColor, numArgs: 4, variableArgs: true };
-    t['SCN'] = { id: OPS.setStrokeColorN, numArgs: 33, variableArgs: true };
-    t['sc'] = { id: OPS.setFillColor, numArgs: 4, variableArgs: true };
-    t['scn'] = { id: OPS.setFillColorN, numArgs: 33, variableArgs: true };
-    t['G'] = { id: OPS.setStrokeGray, numArgs: 1, variableArgs: false };
-    t['g'] = { id: OPS.setFillGray, numArgs: 1, variableArgs: false };
-    t['RG'] = { id: OPS.setStrokeRGBColor, numArgs: 3, variableArgs: false };
-    t['rg'] = { id: OPS.setFillRGBColor, numArgs: 3, variableArgs: false };
-    t['K'] = { id: OPS.setStrokeCMYKColor, numArgs: 4, variableArgs: false };
-    t['k'] = { id: OPS.setFillCMYKColor, numArgs: 4, variableArgs: false };
+    t['CS'] = { id: OPS.setStrokeColorSpace, numArgs: 1, variableArgs: false, };
+    t['cs'] = { id: OPS.setFillColorSpace, numArgs: 1, variableArgs: false, };
+    t['SC'] = { id: OPS.setStrokeColor, numArgs: 4, variableArgs: true, };
+    t['SCN'] = { id: OPS.setStrokeColorN, numArgs: 33, variableArgs: true, };
+    t['sc'] = { id: OPS.setFillColor, numArgs: 4, variableArgs: true, };
+    t['scn'] = { id: OPS.setFillColorN, numArgs: 33, variableArgs: true, };
+    t['G'] = { id: OPS.setStrokeGray, numArgs: 1, variableArgs: false, };
+    t['g'] = { id: OPS.setFillGray, numArgs: 1, variableArgs: false, };
+    t['RG'] = { id: OPS.setStrokeRGBColor, numArgs: 3, variableArgs: false, };
+    t['rg'] = { id: OPS.setFillRGBColor, numArgs: 3, variableArgs: false, };
+    t['K'] = { id: OPS.setStrokeCMYKColor, numArgs: 4, variableArgs: false, };
+    t['k'] = { id: OPS.setFillCMYKColor, numArgs: 4, variableArgs: false, };
 
     // Shading
-    t['sh'] = { id: OPS.shadingFill, numArgs: 1, variableArgs: false };
+    t['sh'] = { id: OPS.shadingFill, numArgs: 1, variableArgs: false, };
 
     // Images
-    t['BI'] = { id: OPS.beginInlineImage, numArgs: 0, variableArgs: false };
-    t['ID'] = { id: OPS.beginImageData, numArgs: 0, variableArgs: false };
-    t['EI'] = { id: OPS.endInlineImage, numArgs: 1, variableArgs: false };
+    t['BI'] = { id: OPS.beginInlineImage, numArgs: 0, variableArgs: false, };
+    t['ID'] = { id: OPS.beginImageData, numArgs: 0, variableArgs: false, };
+    t['EI'] = { id: OPS.endInlineImage, numArgs: 1, variableArgs: false, };
 
     // XObjects
-    t['Do'] = { id: OPS.paintXObject, numArgs: 1, variableArgs: false };
-    t['MP'] = { id: OPS.markPoint, numArgs: 1, variableArgs: false };
-    t['DP'] = { id: OPS.markPointProps, numArgs: 2, variableArgs: false };
-    t['BMC'] = { id: OPS.beginMarkedContent, numArgs: 1, variableArgs: false };
+    t['Do'] = { id: OPS.paintXObject, numArgs: 1, variableArgs: false, };
+    t['MP'] = { id: OPS.markPoint, numArgs: 1, variableArgs: false, };
+    t['DP'] = { id: OPS.markPointProps, numArgs: 2, variableArgs: false, };
+    t['BMC'] = { id: OPS.beginMarkedContent, numArgs: 1, variableArgs: false, };
     t['BDC'] = { id: OPS.beginMarkedContentProps, numArgs: 2,
-                 variableArgs: false };
-    t['EMC'] = { id: OPS.endMarkedContent, numArgs: 0, variableArgs: false };
+                 variableArgs: false, };
+    t['EMC'] = { id: OPS.endMarkedContent, numArgs: 0, variableArgs: false, };
 
     // Compatibility
-    t['BX'] = { id: OPS.beginCompat, numArgs: 0, variableArgs: false };
-    t['EX'] = { id: OPS.endCompat, numArgs: 0, variableArgs: false };
+    t['BX'] = { id: OPS.beginCompat, numArgs: 0, variableArgs: false, };
+    t['EX'] = { id: OPS.endCompat, numArgs: 0, variableArgs: false, };
 
     // (reserved partial commands for the lexer)
     t['BM'] = null;
@@ -3017,7 +2979,7 @@ var EvaluatorPreprocessor = (function EvaluatorPreprocessorClosure() {
           this.stateManager.transform(args);
           break;
       }
-    }
+    },
   };
   return EvaluatorPreprocessor;
 })();
@@ -3111,7 +3073,7 @@ var QueueOptimizer = (function QueueOptimizerClosure() {
         map.push({
           transform,
           x: currentX, y: currentY,
-          w: img.width, h: img.height
+          w: img.width, h: img.height,
         });
         currentX += img.width + 2 * IMAGE_PADDING;
         maxLineHeight = Math.max(maxLineHeight, img.height);
@@ -3150,7 +3112,7 @@ var QueueOptimizer = (function QueueOptimizerClosure() {
       fnArray.splice(iFirstSave, count * 4, OPS.paintInlineImageXObjectGroup);
       argsArray.splice(iFirstSave, count * 4,
         [{ width: imgWidth, height: imgHeight, kind: ImageKind.RGBA_32BPP,
-           data: imgData }, map]);
+           data: imgData, }, map]);
 
       return iFirstSave + 1;
     });
@@ -3243,7 +3205,7 @@ var QueueOptimizer = (function QueueOptimizerClosure() {
           var maskParams = argsArray[iFirstPIMXO + (q << 2)][0];
           images.push({ data: maskParams.data, width: maskParams.width,
                         height: maskParams.height,
-                        transform: transformArgs });
+                        transform: transformArgs, });
         }
 
         // Replace queue items.
@@ -3421,11 +3383,12 @@ var QueueOptimizer = (function QueueOptimizerClosure() {
           i++;
         }
       }
-    }
+    },
   };
   return QueueOptimizer;
 })();
 
-exports.OperatorList = OperatorList;
-exports.PartialEvaluator = PartialEvaluator;
-}));
+export {
+  OperatorList,
+  PartialEvaluator,
+};

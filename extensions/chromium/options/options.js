@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/* globals chrome */
 
 'use strict';
 var storageAreaName = chrome.storage.sync ? 'sync' : 'local';
@@ -158,7 +157,7 @@ function renderDefaultZoomValue(shortDescription) {
   var select = wrapper.querySelector('select');
   select.onchange = function() {
     storageArea.set({
-      defaultZoomValue: this.value
+      defaultZoomValue: this.value,
     });
   };
   wrapper.querySelector('span').textContent = shortDescription;
@@ -187,7 +186,7 @@ function renderSidebarViewOnLoad(shortDescription) {
   var select = wrapper.querySelector('select');
   select.onchange = function() {
     storageArea.set({
-      sidebarViewOnLoad: parseInt(this.value)
+      sidebarViewOnLoad: parseInt(this.value),
     });
   };
   wrapper.querySelector('span').textContent = shortDescription;
@@ -204,7 +203,7 @@ function renderExternalLinkTarget(shortDescription) {
   var select = wrapper.querySelector('select');
   select.onchange = function() {
     storageArea.set({
-      externalLinkTarget: parseInt(this.value)
+      externalLinkTarget: parseInt(this.value),
     });
   };
   wrapper.querySelector('span').textContent = shortDescription;

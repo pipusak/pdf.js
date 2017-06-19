@@ -77,6 +77,10 @@ function DOMElement(name) {
 
 DOMElement.prototype = {
 
+  getAttributeNS: function DOMElement_getAttributeNS(NS, name) {
+    return name in this.attributes ? this.attributes[name] : null;
+  },
+
   setAttributeNS: function DOMElement_setAttributeNS(NS, name, value) {
     value = value || '';
     value = xmlEncode(value);
@@ -147,3 +151,21 @@ global.document = {
     return [];
   }
 };
+
+function Image () {
+  this._src = null;
+  this.onload = null;
+}
+Image.prototype = {
+  get src () {
+    return this._src;
+  },
+  set src (value) {
+    this._src = value;
+    if (this.onload) {
+      this.onload();
+    }
+  }
+}
+
+global.Image = Image;

@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { createPromiseCapability, PDFJS } from './pdfjs';
+import { createPromiseCapability, PDFJS } from 'pdfjs-lib';
 import {
   CSS_UNITS, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, getVisibleElements,
-  MAX_AUTO_SCALE, RendererType, SCROLLBAR_PADDING, scrollIntoView,
+  MAX_AUTO_SCALE, NullL10n, RendererType, SCROLLBAR_PADDING, scrollIntoView,
   UNKNOWN_SCALE, VERTICAL_PADDING, watchScroll
 } from './ui_utils';
 import { PDFRenderingQueue, RenderingStates } from './pdf_rendering_queue';
@@ -55,6 +55,7 @@ var DEFAULT_CACHE_SIZE = 10;
  *   rotation of pages whose orientation differ from the first page upon
  *   printing. The default is `false`.
  * @property {string} renderer - 'canvas' or 'svg'. The default is 'canvas'.
+ * @property {IL10n} l10n - Localization service.
  */
 
 /**
@@ -114,6 +115,7 @@ var PDFViewer = (function pdfViewer() {
     this.renderInteractiveForms = options.renderInteractiveForms || false;
     this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
     this.renderer = options.renderer || RendererType.CANVAS;
+    this.l10n = options.l10n || NullL10n;
 
     this.defaultRenderingQueue = !options.renderingQueue;
     if (this.defaultRenderingQueue) {
@@ -368,6 +370,7 @@ var PDFViewer = (function pdfViewer() {
             enhanceTextSelection: this.enhanceTextSelection,
             renderInteractiveForms: this.renderInteractiveForms,
             renderer: this.renderer,
+            l10n: this.l10n,
           });
           bindOnAfterAndBeforeDraw(pageView);
           this._pages.push(pageView);
@@ -383,8 +386,8 @@ var PDFViewer = (function pdfViewer() {
             return;
           }
           var getPagesLeft = pagesCount;
-          for (var pageNum = 1; pageNum <= pagesCount; ++pageNum) {
-            pdfDocument.getPage(pageNum).then(function(pageNum, pdfPage) {
+          for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
+            pdfDocument.getPage(pageNum).then((pdfPage) => {
               var pageView = this._pages[pageNum - 1];
               if (!pageView.pdfPage) {
                 pageView.setPdfPage(pdfPage);
@@ -393,11 +396,11 @@ var PDFViewer = (function pdfViewer() {
               if (--getPagesLeft === 0) {
                 pagesCapability.resolve();
               }
-            }.bind(this, pageNum));
+            });
           }
         });
 
-        this.eventBus.dispatch('pagesinit', { source: this });
+        this.eventBus.dispatch('pagesinit', { source: this, });
 
         if (this.defaultRenderingQueue) {
           this.update();
@@ -449,14 +452,11 @@ var PDFViewer = (function pdfViewer() {
       this.viewer.textContent = '';
     },
 
-    _scrollUpdate: function PDFViewer_scrollUpdate() {
+    _scrollUpdate() {
       if (this.pagesCount === 0) {
         return;
       }
       this.update();
-      for (var i = 0, ii = this._pages.length; i < ii; i++) {
-        this._pages[i].updatePosition();
-      }
     },
 
     _setScaleDispatchEvent: function pdfViewer_setScaleDispatchEvent(
@@ -464,7 +464,7 @@ var PDFViewer = (function pdfViewer() {
       var arg = {
         source: this,
         scale: newScale,
-        presetValue: preset ? newValue : undefined
+        presetValue: preset ? newValue : undefined,
       };
       this.eventBus.dispatch('scalechanging', arg);
       this.eventBus.dispatch('scalechange', arg);
@@ -491,7 +491,7 @@ var PDFViewer = (function pdfViewer() {
         if (this._location && !PDFJS.ignoreCurrentPositionOnZoom &&
             !(this.isInPresentationMode || this.isChangingPresentationMode)) {
           page = this._location.pageNumber;
-          dest = [null, { name: 'XYZ' }, this._location.left,
+          dest = [null, { name: 'XYZ', }, this._location.left,
                   this._location.top, null];
         }
         this.scrollPageIntoView({
@@ -773,7 +773,7 @@ var PDFViewer = (function pdfViewer() {
 
       this.eventBus.dispatch('updateviewarea', {
         source: this,
-        location: this._location
+        location: this._location,
       });
     },
 
@@ -806,8 +806,8 @@ var PDFViewer = (function pdfViewer() {
       // configurations when presentation mode is active.
       var visible = [];
       var currentPage = this._pages[this._currentPageNumber - 1];
-      visible.push({ id: currentPage.id, view: currentPage });
-      return { first: currentPage, last: currentPage, views: visible };
+      visible.push({ id: currentPage.id, view: currentPage, });
+      return { first: currentPage, last: currentPage, views: visible, };
     },
 
     cleanup() {
@@ -899,16 +899,19 @@ var PDFViewer = (function pdfViewer() {
      * @param {HTMLDivElement} pageDiv
      * @param {PDFPage} pdfPage
      * @param {boolean} renderInteractiveForms
+     * @param {IL10n} l10n
      * @returns {AnnotationLayerBuilder}
      */
     createAnnotationLayerBuilder(pageDiv, pdfPage,
-                                 renderInteractiveForms = false) {
+                                 renderInteractiveForms = false,
+                                 l10n = NullL10n) {
       return new AnnotationLayerBuilder({
         pageDiv,
         pdfPage,
         renderInteractiveForms,
         linkService: this.linkService,
-        downloadManager: this.downloadManager
+        downloadManager: this.downloadManager,
+        l10n,
       });
     },
 

@@ -13,36 +13,13 @@
  * limitations under the License.
  */
 
-'use strict';
-
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define('pdfjs/core/cmap', ['exports', 'pdfjs/shared/util',
-      'pdfjs/core/primitives', 'pdfjs/core/stream', 'pdfjs/core/parser'],
-      factory);
-  } else if (typeof exports !== 'undefined') {
-    factory(exports, require('../shared/util.js'), require('./primitives.js'),
-      require('./stream.js'), require('./parser.js'));
-  } else {
-    factory((root.pdfjsCoreCMap = {}), root.pdfjsSharedUtil,
-      root.pdfjsCorePrimitives, root.pdfjsCoreStream, root.pdfjsCoreParser);
-  }
-}(this, function (exports, sharedUtil, corePrimitives, coreStream, coreParser) {
-
-var Util = sharedUtil.Util;
-var assert = sharedUtil.assert;
-var warn = sharedUtil.warn;
-var error = sharedUtil.error;
-var isInt = sharedUtil.isInt;
-var isString = sharedUtil.isString;
-var MissingDataException = sharedUtil.MissingDataException;
-var CMapCompressionType = sharedUtil.CMapCompressionType;
-var isEOF = corePrimitives.isEOF;
-var isName = corePrimitives.isName;
-var isCmd = corePrimitives.isCmd;
-var isStream = corePrimitives.isStream;
-var Stream = coreStream.Stream;
-var Lexer = coreParser.Lexer;
+import {
+  assert, CMapCompressionType, error, isInt, isString, MissingDataException,
+  Util, warn
+} from '../shared/util';
+import { isCmd, isEOF, isName, isStream } from './primitives';
+import { Lexer } from './parser';
+import { Stream } from './stream';
 
 var BUILT_IN_CMAPS = [
 // << Start unicode maps.
@@ -283,24 +260,34 @@ var CMap = (function CMapClosure() {
       // indices in the *billions*. For such tables we use for..in, which isn't
       // ideal because it stringifies the indices for all present elements, but
       // it does avoid iterating over every undefined entry.
-      var map = this._map;
-      var length = map.length;
-      var i;
+      let map = this._map;
+      let length = map.length;
       if (length <= 0x10000) {
-        for (i = 0; i < length; i++) {
+        for (let i = 0; i < length; i++) {
           if (map[i] !== undefined) {
             callback(i, map[i]);
           }
         }
       } else {
-        for (i in this._map) {
+        for (let i in map) {
           callback(i, map[i]);
         }
       }
     },
 
     charCodeOf(value) {
-      return this._map.indexOf(value);
+      // `Array.prototype.indexOf` is *extremely* inefficient for arrays which
+      // are both very sparse and very large (see issue8372.pdf).
+      let map = this._map;
+      if (map.length <= 0x10000) {
+        return map.indexOf(value);
+      }
+      for (let charCode in map) {
+        if (map[charCode] === value) {
+          return (charCode | 0);
+        }
+      }
+      return -1;
     },
 
     getMap() {
@@ -348,7 +335,7 @@ var CMap = (function CMapClosure() {
         }
       }
       return true;
-    }
+    },
   };
   return CMap;
 })();
@@ -417,7 +404,7 @@ var IdentityCMap = (function IdentityCMapClosure() {
 
     get isIdentityCMap() {
       error('should not access .isIdentityCMap');
-    }
+    },
   };
 
   return IdentityCMap;
@@ -540,7 +527,7 @@ var BinaryCMapReader = (function BinaryCMapReaderClosure() {
         s += String.fromCharCode(this.readNumber());
       }
       return s;
-    }
+    },
   };
 
   function processBinaryCMap(data, cMap, extend) {
@@ -996,11 +983,12 @@ var CMapFactory = (function CMapFactoryClosure() {
         });
       }
       return Promise.reject(new Error('Encoding required.'));
-    }
+    },
   };
 })();
 
-exports.CMap = CMap;
-exports.CMapFactory = CMapFactory;
-exports.IdentityCMap = IdentityCMap;
-}));
+export {
+  CMap,
+  IdentityCMap,
+  CMapFactory,
+};

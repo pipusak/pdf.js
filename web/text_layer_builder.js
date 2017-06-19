@@ -14,7 +14,7 @@
  */
 
 import { getGlobalEventBus } from './dom_events';
-import { renderTextLayer } from './pdfjs';
+import { renderTextLayer } from 'pdfjs-lib';
 
 var EXPAND_DIVS_TIMEOUT = 300; // ms
 
@@ -94,11 +94,11 @@ var TextLayerBuilder = (function TextLayerBuilderClosure() {
         timeout,
         enhanceTextSelection: this.enhanceTextSelection,
       });
-      this.textLayerRenderTask.promise.then(function () {
+      this.textLayerRenderTask.promise.then(() => {
         this.textLayerDiv.appendChild(textLayerFrag);
         this._finishRendering();
         this.updateMatches();
-      }.bind(this), function (reason) {
+      }, function (reason) {
         // cancelled or failed to render text layer -- skipping errors
       });
     },
@@ -147,8 +147,8 @@ var TextLayerBuilder = (function TextLayerBuilderClosure() {
         var match = {
           begin: {
             divIdx: i,
-            offset: matchIdx - iIndex
-          }
+            offset: matchIdx - iIndex,
+          },
         };
 
         // Calculate the end position.
@@ -167,7 +167,7 @@ var TextLayerBuilder = (function TextLayerBuilderClosure() {
 
         match.end = {
           divIdx: i,
-          offset: matchIdx - iIndex
+          offset: matchIdx - iIndex,
         };
         ret.push(match);
       }
@@ -193,7 +193,7 @@ var TextLayerBuilder = (function TextLayerBuilderClosure() {
                           false : this.findController.state.highlightAll);
       var infinity = {
         divIdx: -1,
-        offset: undefined
+        offset: undefined,
       };
 
       function beginText(begin, className) {
@@ -405,7 +405,7 @@ DefaultTextLayerFactory.prototype = {
       viewport,
       enhanceTextSelection,
     });
-  }
+  },
 };
 
 export {

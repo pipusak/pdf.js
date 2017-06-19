@@ -12,12 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals PDFJS, pdfjsSharedUtil */
+/* globals PDFJS, pdfjsDistBuildPdf */
 
 'use strict';
 
 var WAITING_TIME = 100; // ms
 var PDF_TO_CSS_UNITS = 96.0 / 72.0;
+
+var StatTimer = pdfjsDistBuildPdf.StatTimer;
 
 /**
  * @class
@@ -197,7 +199,7 @@ var rasterizeAnnotationLayer = (function rasterizeAnnotationLayerClosure() {
       stylePromise.then(function (styles) {
         style.textContent = styles;
 
-        var annotation_viewport = viewport.clone({ dontFlip: true });
+        var annotation_viewport = viewport.clone({ dontFlip: true, });
         var parameters = {
           viewport: annotation_viewport,
           div,
@@ -258,7 +260,7 @@ var Driver = (function DriverClosure() { // eslint-disable-line no-unused-vars
    */
   function Driver(options) {
     // Configure the global PDFJS object
-    PDFJS.workerSrc = '../src/worker_loader.js';
+    PDFJS.workerSrc = '../build/generic/build/pdf.worker.js';
     PDFJS.cMapPacked = true;
     PDFJS.cMapUrl = '../external/bcmaps/';
     PDFJS.enableStats = true;
@@ -334,66 +336,67 @@ var Driver = (function DriverClosure() { // eslint-disable-line no-unused-vars
       }, this.delay);
     },
 
-    _nextTask: function Driver_nextTask() {
-      var self = this;
-      var failure = '';
+    _nextTask() {
+      let failure = '';
 
-      this._cleanup();
+      this._cleanup().then(() => {
+        if (this.currentTask === this.manifest.length) {
+          this._done();
+          return;
+        }
+        let task = this.manifest[this.currentTask];
+        task.round = 0;
+        task.pageNum = task.firstPage || 1;
+        task.stats = { times: [], };
 
-      if (this.currentTask === this.manifest.length) {
-        this._done();
-        return;
-      }
-      var task = this.manifest[this.currentTask];
-      task.round = 0;
-      task.pageNum = task.firstPage || 1;
-      task.stats = { times: [] };
+        this._log('Loading file "' + task.file + '"\n');
 
-      this._log('Loading file "' + task.file + '"\n');
-
-      var absoluteUrl = new URL(task.file, window.location).href;
-      PDFJS.disableRange = task.disableRange;
-      PDFJS.disableAutoFetch = !task.enableAutoFetch;
-      try {
-        PDFJS.getDocument({
-          url: absoluteUrl,
-          password: task.password
-        }).then(function(doc) {
-          task.pdfDoc = doc;
-          self._nextPage(task, failure);
-        }, function(e) {
-          failure = 'Loading PDF document: ' + e;
-          self._nextPage(task, failure);
-        });
-        return;
-      } catch (e) {
-        failure = 'Loading PDF document: ' + this._exceptionToString(e);
-      }
-      this._nextPage(task, failure);
+        let absoluteUrl = new URL(task.file, window.location).href;
+        PDFJS.disableRange = task.disableRange;
+        PDFJS.disableAutoFetch = !task.enableAutoFetch;
+        try {
+          PDFJS.getDocument({
+            url: absoluteUrl,
+            password: task.password,
+          }).then((doc) => {
+            task.pdfDoc = doc;
+            this._nextPage(task, failure);
+          }, (err) => {
+            failure = 'Loading PDF document: ' + err;
+            this._nextPage(task, failure);
+          });
+          return;
+        } catch (e) {
+          failure = 'Loading PDF document: ' + this._exceptionToString(e);
+        }
+        this._nextPage(task, failure);
+      });
     },
 
-    _cleanup: function Driver_cleanup() {
+    _cleanup() {
       // Clear out all the stylesheets since a new one is created for each font.
       while (document.styleSheets.length > 0) {
-        var styleSheet = document.styleSheets[0];
+        let styleSheet = document.styleSheets[0];
         while (styleSheet.cssRules.length > 0) {
           styleSheet.deleteRule(0);
         }
-        var ownerNode = styleSheet.ownerNode;
+        let ownerNode = styleSheet.ownerNode;
         ownerNode.parentNode.removeChild(ownerNode);
       }
-      var body = document.body;
+      let body = document.body;
       while (body.lastChild !== this.end) {
         body.removeChild(body.lastChild);
       }
 
+      let destroyedPromises = [];
       // Wipe out the link to the pdfdoc so it can be GC'ed.
-      for (var i = 0; i < this.manifest.length; i++) {
+      for (let i = 0; i < this.manifest.length; i++) {
         if (this.manifest[i].pdfDoc) {
-          this.manifest[i].pdfDoc.destroy();
+          destroyedPromises.push(this.manifest[i].pdfDoc.destroy());
           delete this.manifest[i].pdfDoc;
         }
       }
+      return Promise.all(destroyedPromises);
     },
 
     _exceptionToString: function Driver_exceptionToString(e) {
@@ -457,7 +460,7 @@ var Driver = (function DriverClosure() { // eslint-disable-line no-unused-vars
           this._log(' Loading page ' + task.pageNum + '/' +
             task.pdfDoc.numPages + '... ');
           this.canvas.mozOpaque = true;
-          ctx = this.canvas.getContext('2d', {alpha: false});
+          ctx = this.canvas.getContext('2d', { alpha: false, });
           task.pdfDoc.getPage(task.pageNum).then(function(page) {
             var viewport = page.getViewport(PDF_TO_CSS_UNITS);
             self.canvas.width = viewport.width;
@@ -513,7 +516,7 @@ var Driver = (function DriverClosure() { // eslint-disable-line no-unused-vars
 
                 // The annotation builder will draw its content on the canvas.
                 initPromise =
-                  page.getAnnotations({ intent: 'display' }).then(
+                  page.getAnnotations({ intent: 'display', }).then(
                     function(annotations) {
                       return rasterizeAnnotationLayer(annotationLayerContext,
                                                       viewport, annotations,
@@ -546,7 +549,7 @@ var Driver = (function DriverClosure() { // eslint-disable-line no-unused-vars
               }
               page.cleanup();
               task.stats = page.stats;
-              page.stats = new pdfjsSharedUtil.StatTimer();
+              page.stats = new StatTimer();
               self._snapshot(task, error);
             });
             initPromise.then(function () {
@@ -569,7 +572,7 @@ var Driver = (function DriverClosure() { // eslint-disable-line no-unused-vars
     },
 
     _clearCanvas: function Driver_clearCanvas() {
-      var ctx = this.canvas.getContext('2d', {alpha: false});
+      var ctx = this.canvas.getContext('2d', { alpha: false, });
       ctx.beginPath();
       ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     },
@@ -646,7 +649,7 @@ var Driver = (function DriverClosure() { // eslint-disable-line no-unused-vars
         round: task.round,
         page: task.pageNum,
         snapshot,
-        stats: task.stats.times
+        stats: task.stats.times,
       });
       this._send('/submit_task_results', result, callback);
     },
@@ -673,7 +676,7 @@ var Driver = (function DriverClosure() { // eslint-disable-line no-unused-vars
       };
       this.inflight.textContent = this.inFlightRequests++;
       r.send(message);
-    }
+    },
   };
 
   return Driver;

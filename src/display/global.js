@@ -14,7 +14,8 @@
  */
 
 import {
-  _UnsupportedManager, getDocument, PDFDataRangeTransport, PDFWorker
+  _UnsupportedManager, getDocument, LoopbackPort, PDFDataRangeTransport,
+  PDFWorker
 } from './api';
 import {
   addLinkAttributes, CustomStyle, DEFAULT_LINK_REL, getFilenameFromUrl,
@@ -62,7 +63,7 @@ Object.defineProperty(PDFJS, 'verbosity', {
     setVerbosityLevel(level);
   },
   enumerable: true,
-  configurable: true
+  configurable: true,
 });
 
 PDFJS.VERBOSITY_LEVELS = VERBOSITY_LEVELS;
@@ -78,7 +79,7 @@ Object.defineProperty(PDFJS, 'isLittleEndian', {
   configurable: true,
   get: function PDFJS_isLittleEndian() {
     return shadow(PDFJS, 'isLittleEndian', isLittleEndian());
-  }
+  },
 });
 PDFJS.removeNullCharacters = removeNullCharacters;
 PDFJS.PasswordResponses = PasswordResponses;
@@ -265,7 +266,7 @@ if (typeof PDFJSDev === 'undefined' || !PDFJSDev.test('MOZCENTRAL')) {
       PDFJS.externalLinkTarget = value ? LinkTarget.BLANK : LinkTarget.NONE;
     },
     enumerable: true,
-    configurable: true
+    configurable: true,
   });
   if (savedOpenExternalLinksInNewWindow) {
     /**
@@ -281,6 +282,7 @@ if (typeof PDFJSDev === 'undefined' || !PDFJSDev.test('MOZCENTRAL')) {
 }
 
 PDFJS.getDocument = getDocument;
+PDFJS.LoopbackPort = LoopbackPort;
 PDFJS.PDFDataRangeTransport = PDFDataRangeTransport;
 PDFJS.PDFWorker = PDFWorker;
 

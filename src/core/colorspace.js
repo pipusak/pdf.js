@@ -13,32 +13,9 @@
  * limitations under the License.
  */
 
-'use strict';
-
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define('pdfjs/core/colorspace', ['exports', 'pdfjs/shared/util',
-      'pdfjs/core/primitives', 'pdfjs/core/function'],
-      factory);
-  } else if (typeof exports !== 'undefined') {
-    factory(exports, require('../shared/util.js'), require('./primitives.js'),
-      require('./function.js'));
-  } else {
-    factory((root.pdfjsCoreColorSpace = {}), root.pdfjsSharedUtil,
-      root.pdfjsCorePrimitives, root.pdfjsCoreFunction);
-  }
-}(this, function (exports, sharedUtil, corePrimitives, coreFunction) {
-
-var error = sharedUtil.error;
-var info = sharedUtil.info;
-var isArray = sharedUtil.isArray;
-var isString = sharedUtil.isString;
-var shadow = sharedUtil.shadow;
-var warn = sharedUtil.warn;
-var isDict = corePrimitives.isDict;
-var isName = corePrimitives.isName;
-var isStream = corePrimitives.isStream;
-var PDFFunction = coreFunction.PDFFunction;
+import { error, info, isArray, isString, shadow, warn } from '../shared/util';
+import { isDict, isName, isStream } from './primitives';
+import { PDFFunction } from './function';
 
 var ColorSpace = (function ColorSpaceClosure() {
   /**
@@ -220,7 +197,7 @@ var ColorSpace = (function ColorSpaceClosure() {
      * This should be true for all colorspaces except for lab color spaces
      * which are [0,100], [-128, 127], [-128, 127].
      */
-    usesZeroToOneRange: true
+    usesZeroToOneRange: true,
   };
 
   ColorSpace.parse = function ColorSpace_parse(cs, xref, res) {
@@ -431,7 +408,7 @@ var ColorSpace = (function ColorSpaceClosure() {
     },
     get cmyk() {
       return shadow(this, 'cmyk', new DeviceCmykCS());
-    }
+    },
   };
 
   return ColorSpace;
@@ -512,7 +489,7 @@ var AlternateCS = (function AlternateCSClosure() {
     isDefaultDecode: function AlternateCS_isDefaultDecode(decodeMap) {
       return ColorSpace.isDefaultDecode(decodeMap, this.numComps);
     },
-    usesZeroToOneRange: true
+    usesZeroToOneRange: true,
   };
 
   return AlternateCS;
@@ -587,7 +564,7 @@ var IndexedCS = (function IndexedCSClosure() {
       // indexed color maps shouldn't be changed
       return true;
     },
-    usesZeroToOneRange: true
+    usesZeroToOneRange: true,
   };
   return IndexedCS;
 })();
@@ -629,7 +606,7 @@ var DeviceGrayCS = (function DeviceGrayCSClosure() {
     isDefaultDecode: function DeviceGrayCS_isDefaultDecode(decodeMap) {
       return ColorSpace.isDefaultDecode(decodeMap, this.numComps);
     },
-    usesZeroToOneRange: true
+    usesZeroToOneRange: true,
   };
   return DeviceGrayCS;
 })();
@@ -678,7 +655,7 @@ var DeviceRgbCS = (function DeviceRgbCSClosure() {
     isDefaultDecode: function DeviceRgbCS_isDefaultDecode(decodeMap) {
       return ColorSpace.isDefaultDecode(decodeMap, this.numComps);
     },
-    usesZeroToOneRange: true
+    usesZeroToOneRange: true,
   };
   return DeviceRgbCS;
 })();
@@ -760,7 +737,7 @@ var DeviceCmykCS = (function DeviceCmykCSClosure() {
     isDefaultDecode: function DeviceCmykCS_isDefaultDecode(decodeMap) {
       return ColorSpace.isDefaultDecode(decodeMap, this.numComps);
     },
-    usesZeroToOneRange: true
+    usesZeroToOneRange: true,
   };
 
   return DeviceCmykCS;
@@ -857,7 +834,7 @@ var CalGrayCS = (function CalGrayCSClosure() {
     isDefaultDecode: function CalGrayCS_isDefaultDecode(decodeMap) {
       return ColorSpace.isDefaultDecode(decodeMap, this.numComps);
     },
-    usesZeroToOneRange: true
+    usesZeroToOneRange: true,
   };
   return CalGrayCS;
 })();
@@ -1160,7 +1137,7 @@ var CalRGBCS = (function CalRGBCSClosure() {
     isDefaultDecode: function CalRGBCS_isDefaultDecode(decodeMap) {
       return ColorSpace.isDefaultDecode(decodeMap, this.numComps);
     },
-    usesZeroToOneRange: true
+    usesZeroToOneRange: true,
   };
   return CalRGBCS;
 })();
@@ -1304,10 +1281,11 @@ var LabCS = (function LabCSClosure() {
       // ranges that are used.
       return true;
     },
-    usesZeroToOneRange: false
+    usesZeroToOneRange: false,
   };
   return LabCS;
 })();
 
-exports.ColorSpace = ColorSpace;
-}));
+export {
+  ColorSpace,
+};
